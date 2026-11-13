@@ -66,23 +66,39 @@ function M.get_symbols(symbol)
   return captures
 end
 
+---@param objects navigate.Captures[]
+function M.get_names(objects)
+  local names = {}
+  for _, class in pairs(objects or {}) do
+    table.insert(names, class.text)
+  end
+  return names
+end
+
 function M.setup(opts)
   vim.keymap.set('n', "sc", function()
     local classes = M.get_symbols("class")
-    local names = {}
-    for _, class in pairs(classes or {}) do
-      table.insert(names, class.text)
+    if classes then
+      local names = M.get_names(classes)
+      local bufnr, _ = M.create_window_and_buffer()
+      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
     end
-    local bufnr, win_id = M.create_window_and_buffer()
-    vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
   end)
   vim.keymap.set('n', "sf", function()
-    local klasses = M.get_symbols("func")
-    P(klasses)
+    local funcs = M.get_symbols("func")
+    if funcs then
+      local names = M.get_names(funcs)
+      local bufnr, _ = M.create_window_and_buffer()
+      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
+    end
   end)
   vim.keymap.set('n', "sm", function()
     local methods = M.get_symbols("method")
-    P(methods)
+    if methods then
+      local names = M.get_names(methods)
+      local bufnr, _ = M.create_window_and_buffer()
+      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
+    end
   end)
 end
 
