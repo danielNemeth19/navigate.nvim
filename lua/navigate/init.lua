@@ -1,3 +1,4 @@
+local win_config = require("navigate.config")
 local M = {}
 
 ---@class navigate.Captures
@@ -25,17 +26,10 @@ end
 function M.create_window_and_buffer()
   local col, row = M.get_coordinates()
   local bufnr = vim.api.nvim_create_buf(true, true)
-  local title = "Test window"
-  local opts = {
-    relative = "editor",
-    width = 150,
-    height = 50,
-    col = col,
-    row = row,
-    border = "single",
-    title = title
-  }
-  opts.title_prefix = nil
+
+  -- local title = win_config.title_prefix .. "class"
+  local opts = vim.tbl_extend("force", win_config, { col = col, row = row, title = title })
+  -- opts.title_prefix = nil
   local win_id = vim.api.nvim_open_win(bufnr, true, opts)
   return bufnr, win_id
 end
