@@ -4,7 +4,7 @@ local M = {}
 ---@class navigate.Captures
 ---@field capture_name string
 ---@field type string
----@field range string
+---@field range table
 ---@field text string
 
 local queries = {
@@ -49,10 +49,17 @@ function M.get_symbols(symbol)
   local qs = queries[symbol]
   local query = vim.treesitter.query.parse(parser:lang(), qs)
   for id, node in query:iter_captures(root, 0) do
+    local p1, p2, p3, p4 = node:range()
+    local pos_info = {
+      p1=p1,
+      p2=p2,
+      p3=p3,
+      p4=p4
+    }
     local capture_info = {
       capture_name = query.captures[id],
       type = node:type(),
-      range = node:range(),
+      range = pos_info,
       text = vim.treesitter.get_node_text(node, 0),
     }
     table.insert(captures, capture_info)
@@ -81,9 +88,11 @@ function M.setup(opts)
   vim.keymap.set('n', "sf", function()
     local funcs = M.get_symbols("func")
     if funcs then
-      local names = M.get_names(funcs)
       local bufnr, _ = M.create_window_and_buffer()
-      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
+      for i, value in ipairs(funcs) do
+        local text = value.text .. ' ' .. value.range.p1.. ' ' .. value.range.p2
+        vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, {text})
+      end
     end
   end)
   vim.keymap.set('n', "sm", function()
