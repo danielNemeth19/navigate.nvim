@@ -51,10 +51,10 @@ function M.get_symbols(symbol)
   for id, node in query:iter_captures(root, 0) do
     local p1, p2, p3, p4 = node:range()
     local pos_info = {
-      p1=p1,
-      p2=p2,
-      p3=p3,
-      p4=p4
+      p1 = p1,
+      p2 = p2,
+      p3 = p3,
+      p4 = p4
     }
     local capture_info = {
       capture_name = query.captures[id],
@@ -80,27 +80,37 @@ function M.setup(opts)
   vim.keymap.set('n', "sc", function()
     local classes = M.get_symbols("class")
     if classes then
-      local names = M.get_names(classes)
-      local bufnr, _ = M.create_window_and_buffer()
-      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
+      local bufnr, win_id = M.create_window_and_buffer()
+      local lines = vim.tbl_map(function(item)
+        return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
+      end, classes)
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+      -- Send all items to quickfix
+      vim.keymap.set("n", "<C-q>", function()
+        vim.fn.setqflist({}, " ", { title = "Navigate results", items = classes})
+        vim.api.nvim_win_close(win_id, true)
+        vim.cmd.copen()
+      end, { buffer = bufnr, desc = "Send all to quickfix" })
     end
   end)
   vim.keymap.set('n', "sf", function()
     local funcs = M.get_symbols("func")
     if funcs then
       local bufnr, _ = M.create_window_and_buffer()
-      for i, value in ipairs(funcs) do
-        local text = value.text .. ' ' .. value.range.p1.. ' ' .. value.range.p2
-        vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, {text})
-      end
+      local lines = vim.tbl_map(function(item)
+        return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
+      end, funcs)
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
     end
   end)
   vim.keymap.set('n', "sm", function()
     local methods = M.get_symbols("method")
     if methods then
-      local names = M.get_names(methods)
       local bufnr, _ = M.create_window_and_buffer()
-      vim.api.nvim_buf_set_lines(bufnr, -1, -1, false, names)
+      local lines = vim.tbl_map(function(item)
+        return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
+      end, methods)
+      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
     end
   end)
 end
