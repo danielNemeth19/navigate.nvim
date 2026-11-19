@@ -76,41 +76,65 @@ function M.get_names(objects)
   return names
 end
 
+---@param fn string
+---@param objects navigate.Captures[]
+function M.get_quickfix_list(fn, objects)
+  local qf_l = vim.tbl_map(function(item)
+    return {filename = fn, lnum = item.range.p1 + 1, col = item.range.p2 + 1, text = item.text}
+  end, objects)
+  return qf_l
+end
+
 function M.setup(opts)
   vim.keymap.set('n', "sc", function()
+    local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
     local classes = M.get_symbols("class")
     if classes then
       local bufnr, win_id = M.create_window_and_buffer()
       local lines = vim.tbl_map(function(item)
         return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
       end, classes)
+      local qf_l = M.get_quickfix_list(fn, classes)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      -- Send all items to quickfix
       vim.keymap.set("n", "<C-q>", function()
-        vim.fn.setqflist({}, " ", { title = "Navigate results", items = classes})
+        vim.fn.setqflist({}, " ", { title = "Navigate results", items = qf_l })
         vim.api.nvim_win_close(win_id, true)
         vim.cmd.copen()
       end, { buffer = bufnr, desc = "Send all to quickfix" })
     end
   end)
   vim.keymap.set('n', "sf", function()
+    local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
     local funcs = M.get_symbols("func")
     if funcs then
-      local bufnr, _ = M.create_window_and_buffer()
+      local bufnr, win_id = M.create_window_and_buffer()
       local lines = vim.tbl_map(function(item)
         return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
       end, funcs)
+      local qf_l = M.get_quickfix_list(fn, funcs)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+      vim.keymap.set("n", "<C-q>", function()
+        vim.fn.setqflist({}, " ", { title = "Navigate results", items = qf_l })
+        vim.api.nvim_win_close(win_id, true)
+        vim.cmd.copen()
+      end, { buffer = bufnr, desc = "Send all to quickfix" })
     end
   end)
   vim.keymap.set('n', "sm", function()
+    local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
     local methods = M.get_symbols("method")
     if methods then
-      local bufnr, _ = M.create_window_and_buffer()
+      local bufnr, win_id = M.create_window_and_buffer()
       local lines = vim.tbl_map(function(item)
         return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
       end, methods)
       vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
+      local qf_l = M.get_quickfix_list(fn, methods)
+      vim.keymap.set("n", "<C-q>", function()
+        vim.fn.setqflist({}, " ", { title = "Navigate results", items = qf_l })
+        vim.api.nvim_win_close(win_id, true)
+        vim.cmd.copen()
+      end, { buffer = bufnr, desc = "Send all to quickfix" })
     end
   end)
 end
