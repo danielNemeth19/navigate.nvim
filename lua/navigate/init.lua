@@ -1,142 +1,32 @@
-local win_config = require("navigate.config")
 local M = {}
-
----@class navigate.Captures
----@field capture_name string
----@field type string
----@field range table
----@field text string
-
-local queries = {
-  class = "(class_definition name: (identifier) @class.name)",
-  func = "(function_definition name: (identifier) @function.name)",
-  method = "(class_definition body: (block (function_definition name: (identifier) @method.name)))"
-}
-
-function M.get_coordinates()
-  local center_c = vim.o.columns / 2
-  local center_r = vim.o.lines / 2
-  local x_col = center_c - (50 / 2)
-  local y_row = center_r - (50 / 2)
-  return x_col, y_row
-end
-
----@return integer
----@return integer
-function M.create_window_and_buffer()
-  local col, row = M.get_coordinates()
-  local bufnr = vim.api.nvim_create_buf(true, true)
-
-  -- local title = win_config.title_prefix .. "class"
-  local opts = vim.tbl_extend("force", win_config, { col = col, row = row, title = title })
-  -- opts.title_prefix = nil
-  local win_id = vim.api.nvim_open_win(bufnr, true, opts)
-  return bufnr, win_id
-end
-
----@param symbol string
----@return navigate.Captures[]|nil
-function M.get_symbols(symbol)
-  local parser = vim.treesitter.get_parser(0, nil, { error = false })
-  if not parser then
-    print('no parser created')
-    return
-  end
-  local tree = parser:parse()[1]
-  local root = tree:root()
-  ---@type navigate.Captures
-  local captures = {}
-  local qs = queries[symbol]
-  local query = vim.treesitter.query.parse(parser:lang(), qs)
-  for id, node in query:iter_captures(root, 0) do
-    local p1, p2, p3, p4 = node:range()
-    local pos_info = {
-      p1 = p1,
-      p2 = p2,
-      p3 = p3,
-      p4 = p4
-    }
-    local capture_info = {
-      capture_name = query.captures[id],
-      type = node:type(),
-      range = pos_info,
-      text = vim.treesitter.get_node_text(node, 0),
-    }
-    table.insert(captures, capture_info)
-  end
-  return captures
-end
-
----@param objects navigate.Captures[]
-function M.get_names(objects)
-  local names = {}
-  for _, class in pairs(objects or {}) do
-    table.insert(names, class.text)
-  end
-  return names
-end
-
----@param fn string
----@param objects navigate.Captures[]
-function M.get_quickfix_list(fn, objects)
-  local qf_l = vim.tbl_map(function(item)
-    return {filename = fn, lnum = item.range.p1 + 1, col = item.range.p2 + 1, text = item.text}
-  end, objects)
-  return qf_l
-end
+local navigate = require("navigate.navigate")
 
 function M.setup(opts)
-  vim.keymap.set('n', "sc", function()
-    local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
-    local classes = M.get_symbols("class")
-    if classes then
-      local bufnr, win_id = M.create_window_and_buffer()
-      local lines = vim.tbl_map(function(item)
-        return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
-      end, classes)
-      local qf_l = M.get_quickfix_list(fn, classes)
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      vim.keymap.set("n", "<C-q>", function()
-        vim.fn.setqflist({}, " ", { title = "Navigate results", items = qf_l })
-        vim.api.nvim_win_close(win_id, true)
-        vim.cmd.copen()
-      end, { buffer = bufnr, desc = "Send all to quickfix" })
+  local n = navigate:new()
+  vim.api.nvim_create_autocmd("Filetype", {
+    pattern = "python",
+    callback = function()
+      vim.keymap.set("n", "sc", function()
+        n:navigate_symbols("class")
+      end, { buffer = true })
     end
-  end)
-  vim.keymap.set('n', "sf", function()
-    local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
-    local funcs = M.get_symbols("func")
-    if funcs then
-      local bufnr, win_id = M.create_window_and_buffer()
-      local lines = vim.tbl_map(function(item)
-        return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
-      end, funcs)
-      local qf_l = M.get_quickfix_list(fn, funcs)
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      vim.keymap.set("n", "<C-q>", function()
-        vim.fn.setqflist({}, " ", { title = "Navigate results", items = qf_l })
-        vim.api.nvim_win_close(win_id, true)
-        vim.cmd.copen()
-      end, { buffer = bufnr, desc = "Send all to quickfix" })
+  })
+  vim.api.nvim_create_autocmd("Filetype", {
+    pattern = "python",
+    callback = function()
+      vim.keymap.set("n", "sf", function()
+        n:navigate_symbols("func")
+      end, { buffer = true })
     end
-  end)
-  vim.keymap.set('n', "sm", function()
-    local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
-    local methods = M.get_symbols("method")
-    if methods then
-      local bufnr, win_id = M.create_window_and_buffer()
-      local lines = vim.tbl_map(function(item)
-        return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
-      end, methods)
-      vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
-      local qf_l = M.get_quickfix_list(fn, methods)
-      vim.keymap.set("n", "<C-q>", function()
-        vim.fn.setqflist({}, " ", { title = "Navigate results", items = qf_l })
-        vim.api.nvim_win_close(win_id, true)
-        vim.cmd.copen()
-      end, { buffer = bufnr, desc = "Send all to quickfix" })
+  })
+  vim.api.nvim_create_autocmd("Filetype", {
+    pattern = "python",
+    callback = function()
+      vim.keymap.set("n", "sm", function()
+        n:navigate_symbols("method")
+      end, { buffer = true })
     end
-  end)
+  })
 end
 
 return M
