@@ -1,30 +1,20 @@
 local M = {}
+local default_opts = require("navigate.config")
 local navigate = require("navigate.navigate")
 
+
 function M.setup(opts)
-  local n = navigate:new()
-  vim.api.nvim_create_autocmd("Filetype", {
-    pattern = "python",
-    callback = function()
-      vim.keymap.set("n", "sc", function()
-        n:navigate_symbols("class")
-      end, { buffer = true })
-    end
-  })
-  vim.api.nvim_create_autocmd("Filetype", {
-    pattern = "python",
-    callback = function()
-      vim.keymap.set("n", "sf", function()
-        n:navigate_symbols("func")
-      end, { buffer = true })
-    end
-  })
-  vim.api.nvim_create_autocmd("Filetype", {
-    pattern = "python",
-    callback = function()
-      vim.keymap.set("n", "sm", function()
-        n:navigate_symbols("method")
-      end, { buffer = true })
+  local options = vim.tbl_deep_extend("force", {}, default_opts, opts or {} )
+  vim.api.nvim_create_autocmd("FileType", {
+    pattern = navigate.supported_languages(),
+    group = vim.api.nvim_create_augroup("navigate", { clear = true }),
+    callback = function(args)
+      local n = navigate:new(options)
+      for symbol, keymap in pairs(n.opts.keymaps) do
+        vim.keymap.set("n", keymap, function()
+          n:navigate_symbols(symbol)
+        end, {buffer = args.buf})
+      end
     end
   })
 end

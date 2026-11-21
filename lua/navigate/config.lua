@@ -6,6 +6,17 @@
 ---@field border string|table
 ---@field title string|table
 ---@field title_pos "left"|"right"|"center"
+
+---@class navigate.keymaps
+---@field class string
+---@field func string
+---@field method string
+
+---@class navigate.opts
+---@field window_config navigate.window_config
+---@field keymaps navigate.keymaps
+
+---@type navigate.window_config
 local window_config = {
   relative = "editor",
   width = 50,
@@ -24,4 +35,18 @@ local window_config = {
   zindex = 50,
 }
 
-return window_config
+
+---@type navigate.keymaps
+local keymap_presets = {
+  class = "sc",
+  method = "sm",
+  func = "sf",
+}
+
+---@type navigate.opts
+local opts = {
+  window_config = window_config,
+  keymaps = keymap_presets
+}
+
+return opts

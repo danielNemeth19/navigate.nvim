@@ -1,12 +1,16 @@
-local win_config = require("navigate.config")
-
 ---@class Navigate
----@field config navigate.window_config
+---@field opts navigate.opts
 local Navigate = {}
 Navigate.__index = Navigate
 
-function Navigate:new()
+function Navigate.supported_languages()
+  return "python"
+end
+
+---@param opts navigate.opts
+function Navigate:new(opts)
   local instance = setmetatable({}, self)
+  instance.opts = opts
   return instance
 end
 
@@ -32,13 +36,12 @@ end
 
 ---@return integer
 ---@return integer
-function Navigate:create_window_and_buffer()
+function Navigate:create_window_and_buffer(symbol)
   local col, row = self:get_coordinates()
   local bufnr = vim.api.nvim_create_buf(true, true)
 
-  -- local title = win_config.title_prefix .. "class"
-  local opts = vim.tbl_extend("force", win_config, { col = col, row = row, title = title })
-  -- opts.title_prefix = nil
+  local title = self.opts.window_config.title[2][1] .. symbol
+  local opts = vim.tbl_extend("force", self.opts.window_config, { col = col, row = row, title = title })
   local win_id = vim.api.nvim_open_win(bufnr, true, opts)
   return bufnr, win_id
 end
@@ -90,7 +93,7 @@ function Navigate:navigate_symbols(symbol_type)
   local fn = vim.api.nvim_buf_get_name(vim.api.nvim_get_current_buf())
   local symbols = self:get_symbols(symbol_type)
   if symbols then
-    local bufnr, win_id = self:create_window_and_buffer()
+    local bufnr, win_id = self:create_window_and_buffer(symbol_type)
     local lines = vim.tbl_map(function(item)
       return string.format("%s: %d %d", item.text, item.range.p1, item.range.p2)
     end, symbols)
