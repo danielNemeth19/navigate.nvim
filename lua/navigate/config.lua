@@ -6,6 +6,7 @@
 ---@field border string|table
 ---@field title string|table
 ---@field title_pos "left"|"right"|"center"
+---@field close_window string
 
 ---@class navigate.keymaps
 ---@field class string
@@ -32,7 +33,7 @@ local window_config = {
   title_pos = 'center',
   footer = { { ' q to close ', 'FloatFooter' } },
   footer_pos = 'right',
-  zindex = 50,
+  zindex = 50
 }
 
 
