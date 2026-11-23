@@ -24,6 +24,7 @@ end
 
 local queries = {
   class = "(class_definition name: (identifier) @class.name)",
+  class_match = "(class_definition name: (identifier) @class.name body: (block [ (function_definition name: (identifier) @method.name) @method (decorated_definition definition: (function_definition name: (identifier) @method.name) @method) ])) @class",
   func = "(function_definition name: (identifier) @function.name)",
   method = "(class_definition body: (block (function_definition name: (identifier) @method.name)))"
 }
@@ -89,6 +90,21 @@ function Navigate:get_symbols(symbol)
       text = vim.treesitter.get_node_text(node, 0),
     }
     table.insert(captures, capture_info)
+
+    local qs_2 = queries["class_match"]
+    local query_2 = vim.treesitter.query.parse(parser:lang(), qs_2)
+    for _, match in query_2:iter_matches(root, 0) do
+      local match_result = {}
+      for capture_id, nodes in pairs(match) do
+        local node = nodes[1]
+        match_result[query_2.captures[capture_id]] = {
+          text = vim.treesitter.get_node_text(node, 0),
+          range = { node:range() },
+          type = node:type()
+        }
+      end
+    P(match_result)
+    end
   end
   return captures
 end
