@@ -94,6 +94,7 @@ function Navigate:get_symbols(symbol)
     local qs_2 = queries["class_match"]
     local query_2 = vim.treesitter.query.parse(parser:lang(), qs_2)
     for _, match in query_2:iter_matches(root, 0) do
+      P(match)
       local match_result = {}
       for capture_id, nodes in pairs(match) do
         local node = nodes[1]
@@ -103,7 +104,7 @@ function Navigate:get_symbols(symbol)
           type = node:type()
         }
       end
-    P(match_result)
+    -- P(match_result)
     end
   end
   return captures

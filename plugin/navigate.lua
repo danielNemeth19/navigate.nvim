@@ -12,3 +12,11 @@ vim.api.nvim_create_autocmd('ColorScheme', {
   group = vim.api.nvim_create_augroup("NavigateHighlights", { clear = true }),
   callback = highlights.apply
 })
+
+vim.api.nvim_create_autocmd("FileType", {
+  group = vim.api.nvim_create_augroup("navigate_start", { clear = true }),
+  pattern = require("navigate.navigate").supported_languages(),
+  callback = function(args)
+    require("navigate").attach(args.buf)
+  end
+})
